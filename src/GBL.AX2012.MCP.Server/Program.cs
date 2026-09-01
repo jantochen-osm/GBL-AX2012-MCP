@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -35,6 +36,11 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    // Pin content root to the executable directory so appsettings.json and
+    // Serilog logs resolve regardless of the working directory
+    // (e.g. `dotnet run` invoked from the repository root).
+    Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
     Log.Information("Starting GBL-AX2012-MCP Server");
     
     var builder = Host.CreateApplicationBuilder(args);

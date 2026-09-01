@@ -96,6 +96,11 @@ cp src/GBL.AX2012.MCP.Server/appsettings.json \
 
 ### 5. 启动
 
+**开发调试（dotnet run，任意目录均可，代码已固定配置根到 bin）：**
+```powershell
+dotnet run --project src\GBL.AX2012.MCP.Server
+```
+
 **开发/验证（以当前用户身份，Windows 认证即用此身份）：**
 ```powershell
 Start-Process -FilePath "<路径>\bin\Debug\net8.0\GBL.AX2012.MCP.Server.exe" `

@@ -131,6 +131,15 @@ Copy-Item src\GBL.AX2012.MCP.Server\appsettings.json `
           src\GBL.AX2012.MCP.Server\bin\Debug\net8.0\appsettings.json
 ```
 
+**开发调试（dotnet run，从任意目录执行均可——代码已固定配置根）：**
+```powershell
+# 从仓库根或项目目录都行，配置和日志统一从 bin\Debug\net8.0\ 读取
+dotnet run --project src\GBL.AX2012.MCP.Server
+# 或
+cd src\GBL.AX2012.MCP.Server && dotnet run
+```
+> 前台运行，Ctrl+C 停止；日志写入 `bin\Debug\net8.0\logs\mcp-<日期>.log`。
+
 **开发/验证（后台运行，身份 = 当前登录用户，Windows 认证即以此身份进行）：**
 ```powershell
 Start-Process -FilePath "D:\flexwork-space\GBL-AX2012-MCP\src\GBL.AX2012.MCP.Server\bin\Debug\net8.0\GBL.AX2012.MCP.Server.exe" `
@@ -250,6 +259,7 @@ Copy-Item src\GBL.AX2012.MCP.Server\appsettings.json `
 **可能原因 1（旧版本）：** stdio EOF 触发宿主停止（旧 `McpServer` 调用 `StopApplication`）——已修复。
 **可能原因 2：** 启动后立即检查，配置验证需约 25 秒——请等待后重试。
 **可能原因 3：** 端口 8080/9090 被占用（如 WSL 旧实例仍在运行）——先停止占用进程。
+**可能原因 4（旧版本）：** 配置验证失败（日志报 "configuration section is missing"）——旧版本从仓库根执行 `dotnet run` 时配置从工作目录读取导致读不到 appsettings.json。已修复（`Directory.SetCurrentDirectory(AppContext.BaseDirectory)`），最新代码从任意目录启动均可。
 **解决：** 检查 `logs\mcp-<日期>.log` 中的 [FTL] 日志。
 
 ### Q5: Business Connector .NET is not installed
