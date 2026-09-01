@@ -92,12 +92,11 @@ try
     builder.Services.Configure<GBL.AX2012.MCP.Server.Webhooks.WebhookServiceOptions>(
         builder.Configuration.GetSection(GBL.AX2012.MCP.Server.Webhooks.WebhookServiceOptions.SectionName));
     
-    // Register Webhook DbContext
-    builder.Services.AddDbContextFactory<GBL.AX2012.MCP.Audit.Data.WebhookDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("AuditDb")));
-    
+    // Webhook storage: in-memory implementation (no SQL Server required).
+    // Subscriptions are lost on restart; switch to DatabaseWebhookService
+    // when a persistent store (SQL Server) is available.
     builder.Services.AddHttpClient();
-    builder.Services.AddSingleton<GBL.AX2012.MCP.Server.Webhooks.IWebhookService, GBL.AX2012.MCP.Server.Webhooks.DatabaseWebhookService>();
+    builder.Services.AddSingleton<GBL.AX2012.MCP.Server.Webhooks.IWebhookService, GBL.AX2012.MCP.Server.Webhooks.WebhookService>();
     
     // Register Kill Switch
     builder.Services.AddSingleton<IKillSwitchService, KillSwitchService>();

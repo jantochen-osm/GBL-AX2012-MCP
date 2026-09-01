@@ -141,7 +141,7 @@ Start-Service GBL-AX2012-MCP
 
 1. **AIF HTTP 返回 503**（`AIF_ERROR: ServiceUnavailable`）：网络通、认证通，但 AIF 应用池未启动/虚拟目录未部署 → **需服务器管理员在 AOS 主机 IIS 上处理**：启动 AIF 应用池、确认 `/DynamicsAx` 部署到 8102、验证 `curl http://localhost:8102/DynamicsAx/Services/SystemServiceGroup` 返回 XML。
 2. **AIF 权限**：运行服务的 Windows 账号需对 AX AIF 服务有权限。
-3. **AuditDb 不可用**：webhook 工具（`ax_list_webhooks` 等）报 INTERNAL_ERROR（SQL 连接失败）→ 需要 SQL Server 实例建 `MCP_Audit` 库 + EF 迁移，或接受 webhook 功能不可用。
+3. **webhook 存储为内存实现**：订阅/退订/列表/投递功能完整（无需 SQL Server），但**服务器重启后订阅丢失**。需要持久化时：部署 SQL Server 建 `MCP_Audit` 库 + EF 迁移，`Program.cs` 注册切换回 `DatabaseWebhookService`。
 4. **BC.NET 未安装**：日志警告 "Business Connector .NET is not installed - using mock connection" → 写入类工具（创建订单/过账等）不可用，需部署 BC.Wrapper（见 `docs/BC-WRAPPER-SETUP.md`）。
 5. **System.Text.Json 8.0.0 高危漏洞**（NU1903: GHSA-8g4q-xg66-9fp4 / GHSA-hh2w-p6rv-4g7w）：建议升级到修复版本。
 

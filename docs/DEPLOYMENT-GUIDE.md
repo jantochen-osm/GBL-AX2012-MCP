@@ -218,7 +218,7 @@ curl http://localhost:9090/metrics
 | `ax_get_self_healing_status` | ✅ 成功 | 熔断器状态可查 |
 | `ax_get_customer` 等 AIF 工具 | ❌ `AIF_ERROR: ServiceUnavailable` | **Windows 认证已通过、请求真实到达 AIF**，AIF HTTP 8102 返回 503（服务端未就绪，需 IT 排障，见下） |
 | `ax_query_audit` | ❌ `FORBIDDEN` | 预期行为：需 `MCP_Admin` 角色（角色来自 Windows 用户组） |
-| `ax_list_webhooks` | ❌ `INTERNAL_ERROR` | AuditDb（SQL Server）未部署，连接失败 |
+| `ax_list_webhooks` | ✅ 成功 | webhook 存储为内存实现（无 SQL Server 依赖，订阅重启后丢失） |
 
 **与 WSL 部署的对比（为什么必须 Windows）：**
 
@@ -268,9 +268,9 @@ Copy-Item src\GBL.AX2012.MCP.Server\appsettings.json `
 ### Q6: ax_query_audit 返回 FORBIDDEN
 **说明：** 预期行为。该工具要求 `MCP_Admin` 角色，角色来自运行账号的 Windows 组（`MCP-Admins`）。如需要，请 IT 将账号加入对应 AD 组。
 
-### Q7: ax_list_webhooks 等 webhook 工具报 INTERNAL_ERROR
-**原因：** AuditDb（SQL Server）不可达。本机无 SQL Server 时 webhook 功能不可用，不影响其他工具。
-**解决：** 部署 SQL Server 实例，创建 `MCP_Audit` 库并执行 EF 迁移（见 `docs/DATABASE-SETUP.md`），然后更新 `AuditDb` 连接串。
+### Q7: webhook 订阅是否持久化？
+**说明：** 默认使用**内存存储**（`WebhookService`），订阅/退订/列表/投递功能完整，无需 SQL Server；**服务器重启后订阅丢失**（开发/测试环境可接受）。
+**需要持久化时：** 部署 SQL Server 实例，创建 `MCP_Audit` 库并执行 EF 迁移（见 `docs/DATABASE-SETUP.md`），将 `Program.cs` 中注册改为 `DatabaseWebhookService`，然后更新 `AuditDb` 连接串。
 
 ---
 
