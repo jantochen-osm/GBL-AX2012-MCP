@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using GBL.AX2012.MCP.Core.Interfaces;
@@ -27,7 +29,7 @@ public class ConnectionPoolStatus
 public class ConnectionPoolMonitor : IConnectionPoolMonitor, IHostedService
 {
     private readonly ILogger<ConnectionPoolMonitor> _logger;
-    private readonly ISelfHealingService _selfHealingService;
+    private readonly Lazy<ISelfHealingService> _selfHealingService;
     private readonly ConcurrentDictionary<string, ConnectionPoolStatus> _pools = new();
     private Timer? _monitoringTimer;
     private readonly int _failureThreshold = 3;
@@ -35,10 +37,10 @@ public class ConnectionPoolMonitor : IConnectionPoolMonitor, IHostedService
     
     public ConnectionPoolMonitor(
         ILogger<ConnectionPoolMonitor> logger,
-        ISelfHealingService selfHealingService)
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
-        _selfHealingService = selfHealingService;
+        _selfHealingService = new Lazy<ISelfHealingService>(() => serviceProvider.GetRequiredService<ISelfHealingService>());
     }
     
     public Task StartAsync(CancellationToken cancellationToken)
@@ -89,7 +91,7 @@ public class ConnectionPoolMonitor : IConnectionPoolMonitor, IHostedService
             pool.LastRecovery = DateTime.UtcNow;
             pool.FailedConnections = 0;
             
-            _selfHealingService.RecordRecovery(pool.Name, "connection_pool");
+            _selfHealingService.Value.RecordRecovery(pool.Name, "connection_pool");
             
             _logger.LogInformation("Connection pool {PoolName} recovered successfully", pool.Name);
         }
@@ -128,7 +130,7 @@ public class ConnectionPoolMonitor : IConnectionPoolMonitor, IHostedService
             pool.LastRecovery = DateTime.UtcNow;
             pool.FailedConnections = 0;
             
-            _selfHealingService.RecordRecovery(poolName, "connection_pool");
+            _selfHealingService.Value.RecordRecovery(poolName, "connection_pool");
             
             _logger.LogInformation("Connection pool {PoolName} recovered", poolName);
         }

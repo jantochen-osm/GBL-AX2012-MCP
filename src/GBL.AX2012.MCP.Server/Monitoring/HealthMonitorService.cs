@@ -68,12 +68,23 @@ public class HealthMonitorService : BackgroundService
                 await PerformHealthCheckAsync(stoppingToken);
                 await CheckErrorRateSpikeAsync();
             }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Health check failed");
             }
             
-            await Task.Delay(TimeSpan.FromSeconds(_options.CheckIntervalSeconds), stoppingToken);
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(_options.CheckIntervalSeconds), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
         }
     }
     

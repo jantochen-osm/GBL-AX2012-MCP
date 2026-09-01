@@ -11,3 +11,6 @@
 Dockerfile
 docker-compose.yml
 *.dockerignore
+# Ignore build artifacts
+bin/
+obj/

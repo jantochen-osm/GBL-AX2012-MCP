@@ -39,6 +39,12 @@ try
     
     var builder = Host.CreateApplicationBuilder(args);
     
+    // Don't stop host when background services fail (e.g. stdio EOF)
+    builder.Services.Configure<HostOptions>(options =>
+    {
+        options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+    });
+    
     // Add Serilog
     builder.Services.AddSerilog();
     

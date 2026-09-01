@@ -1,5 +1,6 @@
 using System.Text.Json;
 using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using GBL.AX2012.MCP.Core.Interfaces;
 using GBL.AX2012.MCP.Core.Models;
@@ -67,7 +68,6 @@ public class BatchOperationsInputValidator : AbstractValidator<BatchOperationsIn
 public class BatchOperationsTool : ToolBase<BatchOperationsInput, BatchOperationsOutput>
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly IEnumerable<ITool> _tools;
     
     public override string Name => "ax_batch_operations";
     public override string Description => "Execute multiple operations in a single batch call";
@@ -76,12 +76,10 @@ public class BatchOperationsTool : ToolBase<BatchOperationsInput, BatchOperation
         ILogger<BatchOperationsTool> logger,
         IAuditService audit,
         BatchOperationsInputValidator validator,
-        IServiceProvider serviceProvider,
-        IEnumerable<ITool> tools)
+        IServiceProvider serviceProvider)
         : base(logger, audit, validator)
     {
         _serviceProvider = serviceProvider;
-        _tools = tools;
     }
     
     protected override async Task<BatchOperationsOutput> ExecuteCoreAsync(
@@ -91,7 +89,8 @@ public class BatchOperationsTool : ToolBase<BatchOperationsInput, BatchOperation
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var results = new List<BatchOperationResult>();
-        var toolDict = _tools.ToDictionary(t => t.Name, t => t);
+        var tools = _serviceProvider.GetServices<ITool>();
+        var toolDict = tools.ToDictionary(t => t.Name, t => t);
         
         // Process requests in parallel batches
         var semaphore = new SemaphoreSlim(input.MaxParallel);

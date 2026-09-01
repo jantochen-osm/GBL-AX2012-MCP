@@ -107,10 +107,20 @@ public abstract class ToolBase<TInput, TOutput> : ITool
             auditEntry.Success = false;
             auditEntry.Error = ex.Message;
             auditEntry.DurationMs = stopwatch.ElapsedMilliseconds;
-            
+
             _logger.LogWarning("Circuit breaker open for {Tool}", Name);
-            
+
             return ToolResponse.Error("CIRCUIT_OPEN", ex.Message);
+        }
+        catch (ForbiddenException ex)
+        {
+            auditEntry.Success = false;
+            auditEntry.Error = ex.Message;
+            auditEntry.DurationMs = stopwatch.ElapsedMilliseconds;
+
+            _logger.LogWarning("Forbidden for {Tool}: {Error}", Name, ex.Message);
+
+            return ToolResponse.Error("FORBIDDEN", ex.Message);
         }
         catch (Exception ex)
         {

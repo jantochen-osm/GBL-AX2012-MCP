@@ -10,12 +10,11 @@ using GBL.AX2012.MCP.Server.Security;
 
 namespace GBL.AX2012.MCP.Server;
 
-public class McpServer : IHostedService
+public class McpServer : BackgroundService
 {
     private readonly ILogger<McpServer> _logger;
     private readonly IServiceProvider _services;
     private readonly McpServerOptions _options;
-    private readonly IHostApplicationLifetime _lifetime;
     private readonly IEnumerable<ITool> _tools;
     private readonly IAuthenticationService _authService;
     private readonly IAuthorizationService _authzService;
@@ -31,7 +30,6 @@ public class McpServer : IHostedService
         ILogger<McpServer> logger,
         IServiceProvider services,
         IOptions<McpServerOptions> options,
-        IHostApplicationLifetime lifetime,
         IEnumerable<ITool> tools,
         IAuthenticationService authService,
         IAuthorizationService authzService,
@@ -40,14 +38,13 @@ public class McpServer : IHostedService
         _logger = logger;
         _services = services;
         _options = options.Value;
-        _lifetime = lifetime;
         _tools = tools;
         _authService = authService;
         _authzService = authzService;
         _rateLimiter = rateLimiter;
     }
     
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public override async Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Starting MCP Server {Name} v{Version} on {Transport}",
             _options.ServerName, _options.ServerVersion, _options.Transport);
@@ -56,14 +53,25 @@ public class McpServer : IHostedService
         _logger.LogInformation("Registered {Count} tools: {Tools}",
             toolList.Count, string.Join(", ", toolList.Select(t => t.Name)));
         
-        // Start MCP protocol handler
-        _ = Task.Run(() => RunMcpProtocolAsync(cancellationToken), cancellationToken);
+        await base.StartAsync(cancellationToken);
     }
     
-    public Task StopAsync(CancellationToken cancellationToken)
+    public override Task StopAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Stopping MCP Server");
-        return Task.CompletedTask;
+        return base.StopAsync(cancellationToken);
+    }
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (_options.Transport != "stdio")
+        {
+            // In HTTP mode, just keep the service alive
+            await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(false);
+            return;
+        }
+        
+        await RunMcpProtocolAsync(stoppingToken);
     }
     
     private async Task RunMcpProtocolAsync(CancellationToken cancellationToken)
@@ -94,10 +102,6 @@ public class McpServer : IHostedService
         catch (Exception ex)
         {
             _logger.LogError(ex, "MCP protocol handler error");
-        }
-        finally
-        {
-            _lifetime.StopApplication();
         }
     }
     
